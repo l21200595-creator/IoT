@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IoT Monitor — Dashboard de Monitoreo</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #060b10;
+    --surface: #0c1420;
+    --surface2: #101e30;
+    --surface3: #162540;
+    --border: #1a2e42;
+    --accent: #00e5ff;
+    --green: #00ff88;
+    --red: #ff3b30;
+    --yellow: #ffd60a;
+    --purple: #9d5cf6;
+    --orange: #ff9f0a;
+    --blue: #007aff;
+    --text: #d0e8f4;
+    --muted: #3a5a72;
+    --font-mono: 'Space Mono', monospace;
+    --font-display: 'Syne', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-display); min-height: 100vh; }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 100% 60% at 50% -10%, rgba(0,229,255,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .app-wrapper { position: relative; z-index: 1; }
+
+  .top-nav {
+    background: rgba(12,20,32,0.95);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    height: 64px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .brand { font-size: 1.1rem; font-weight: 800; letter-spacing: 0.08em; color: var(--accent); text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
+  .brand-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent), var(--purple)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
+  .nav-links { display: flex; gap: 0.5rem; }
+  .nav-link-btn { padding: 0.4rem 1rem; border-radius: 6px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); text-decoration: none; transition: all 0.2s; border: 1px solid transparent; }
+  .nav-link-btn:hover { color: var(--accent); border-color: var(--border); background: var(--surface2); }
+  .nav-link-btn.active { color: var(--accent); border-color: var(--accent); background: rgba(0,229,255,0.08); }
+
+  .main-content { padding: 2rem; max-width: 1600px; margin: 0 auto; }
+
+  .page-header { margin-bottom: 2rem; display: flex; align-items: flex-end; justify-content: space-between; }
+  .page-title { font-size: 2rem; font-weight: 800; }
+  .page-title span { color: var(--accent); }
+  .page-subtitle { color: var(--muted); font-family: var(--font-mono); font-size: 0.8rem; margin-top: 0.5rem; }
+
+  .refresh-indicator {
+    display: flex; align-items: center; gap: 0.8rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 30px;
+    padding: 0.5rem 1.2rem;
+    font-family: var(--font-mono); font-size: 0.75rem;
+  }
+  .refresh-ring {
+    width: 20px; height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 2s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .refresh-label { color: var(--muted); }
+  .refresh-count { color: var(--accent); }
+
+  /* Section title */
+  .section-title {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 1.2rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 0.8rem;
+  }
+  .section-title::before { content: '//'; color: var(--accent); }
+
+  /* Status Overview Grid */
+  .overview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.2rem; margin-bottom: 2.5rem; }
+
+  .device-status-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.4rem;
+    position: relative; overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  .device-status-card.online { border-color: rgba(0,255,136,0.25); }
+  .device-status-card.offline { border-color: rgba(255,59,48,0.2); }
+
+  /* Animated ring */
+  .status-ring-wrapper {
+    display: flex; justify-content: center; align-items: center;
+    margin-bottom: 1rem;
+  }
+  .status-ring {
+    width: 90px; height: 90px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    font-size: 2rem;
+  }
+  .status-ring svg {
+    position: absolute; top: 0; left: 0;
+    transform: rotate(-90deg);
+  }
+  .ring-bg { fill: none; stroke: var(--surface3); stroke-width: 3; }
+  .ring-fg { fill: none; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 238; transition: stroke-dashoffset 1s ease, stroke 0.3s; }
+  .status-ring .emoji { position: relative; z-index: 1; }
+
+  .card-title { font-weight: 700; font-size: 0.95rem; text-align: center; margin-bottom: 0.3rem; }
+  .card-location { font-family: var(--font-mono); font-size: 0.68rem; color: var(--muted); text-align: center; margin-bottom: 1rem; }
+
+  .metric-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid rgba(26,46,66,0.6);
+    font-family: var(--font-mono); font-size: 0.72rem;
+  }
+  .metric-row:last-child { border-bottom: none; }
+  .metric-key { color: var(--muted); }
+  .metric-val { font-weight: 700; }
+  .metric-val.green { color: var(--green); }
+  .metric-val.red { color: var(--red); }
+  .metric-val.blue { color: var(--accent); }
+  .metric-val.yellow { color: var(--yellow); }
+  .metric-val.purple { color: var(--purple); }
+  .metric-val.orange { color: var(--orange); }
+
+  /* Mini sparkline */
+  .sparkline-wrapper { margin-top: 0.8rem; height: 32px; }
+  .sparkline { width: 100%; height: 32px; }
+
+  /* Status badge */
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 0.2rem 0.7rem;
+    border-radius: 20px;
+    font-family: var(--font-mono); font-size: 0.65rem; font-weight: 700;
+  }
+  .status-badge.online { background: rgba(0,255,136,0.12); color: var(--green); border: 1px solid rgba(0,255,136,0.3); }
+  .status-badge.offline { background: rgba(255,59,48,0.1); color: var(--red); border: 1px solid rgba(255,59,48,0.2); }
+  .status-badge.powered { background: rgba(0,229,255,0.1); color: var(--accent); border: 1px solid rgba(0,229,255,0.2); }
+  .sbdot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .sbdot.pulse { animation: livePulse 1.5s infinite; }
+  @keyframes livePulse { 0%,100%{box-shadow:0 0 0 0 currentColor} 50%{box-shadow:0 0 0 4px transparent} }
+
+  .badges-row { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.8rem; justify-content: center; }
+
+  /* History tables section */
+  .history-section { margin-top: 2rem; }
+  .device-history-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+  .history-block-header {
+    background: var(--surface2);
+    padding: 1rem 1.5rem;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .history-block-title { display: flex; align-items: center; gap: 0.8rem; font-weight: 700; }
+  .history-block-icon { font-size: 1.2rem; }
+  .history-table { width: 100%; border-collapse: collapse; }
+  .history-table th {
+    padding: 0.7rem 1.2rem;
+    font-family: var(--font-mono); font-size: 0.65rem;
+    text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted);
+    text-align: left; background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .history-table td {
+    padding: 0.65rem 1.2rem;
+    font-family: var(--font-mono); font-size: 0.75rem;
+    border-bottom: 1px solid rgba(26,46,66,0.4);
+    vertical-align: middle;
+  }
+  .history-table tr:last-child td { border-bottom: none; }
+  .history-table tr:nth-child(1) td { background: rgba(0,229,255,0.03); }
+  .history-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .row-index { color: var(--muted); width: 30px; }
+  .cell-timestamp { color: var(--muted); white-space: nowrap; }
+  .cell-status { }
+  .cell-powered { }
+  .cell-value { color: var(--purple); }
+
+  /* System health bar */
+  .system-health {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1.2rem;
+  }
+  .health-metric { text-align: center; }
+  .health-value { font-size: 1.6rem; font-weight: 800; font-family: var(--font-mono); }
+  .health-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 0.2rem; }
+
+  .chart-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .chart-canvas { width: 100%; height: 120px; display: block; }
+</style>
+</head>
+<body>
+<div class="app-wrapper">
+
+  <nav class="top-nav">
+    <div class="brand">
+      <div class="brand-icon">⚡</div>
+      NEXUS<span style="color:var(--muted)">·</span>IOT
+    </div>
+    <div class="nav-links">
+      <a href="iot-admin.html" class="nav-link-btn">Admin</a>
+      <a href="iot-control.html" class="nav-link-btn">Control</a>
+      <a href="iot-monitor.html" class="nav-link-btn active">Monitor</a>
+    </div>
+  </nav>
+
+  <div class="main-content">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Dashboard de <span>Monitoreo</span></div>
+        <div class="page-subtitle">// Visual Status · History Tables · 2s Refresh Rate</div>
+      </div>
+      <div class="refresh-indicator">
+        <div class="refresh-ring"></div>
+        <span class="refresh-label">Próximo refresco en</span>
+        <span class="refresh-count" id="countdown">2</span>
+        <span class="refresh-label">s</span>
+      </div>
+    </div>
+
+    <!-- System Health Summary -->
+    <div class="system-health" id="systemHealth"></div>
+
+    <!-- Section: Visual Status -->
+    <div class="section-title">ESTADO VISUAL DE DISPOSITIVOS</div>
+    <div class="overview-grid" id="overviewGrid"></div>
+
+    <!-- Section: Activity Chart -->
+    <div class="section-title">ACTIVIDAD DEL SISTEMA (ÚLTIMOS 10 CICLOS)</div>
+    <div class="chart-container">
+      <canvas id="activityChart" class="chart-canvas" height="120"></canvas>
+    </div>
+
+    <!-- Section: History Tables -->
+    <div class="section-title">HISTORIAL DE ESTADOS (ÚLTIMOS 10 REGISTROS POR DISPOSITIVO)</div>
+    <div class="history-section" id="historySection"></div>
+  </div>
+</div>
+
+<script>
+// =====================================================
+// MOCKAPI REAL CONNECTION
+// =====================================================
+const BASE_URL = 'https://698a1772c04d974bc6a1532f.mockapi.io/api/v1';
+
+let devices = [];
+let statusHistoryMap = {}; // deviceId -> array of history records
+let refreshCycle = 0;
+let activityData = Array(10).fill(0);
+
+function getIcon(type) {
+  const icons = { sensor: '🔬', actuador: '⚙️', camara: '📷', controlador: '🎛️', gateway: '🔀' };
+  return icons[type] || '📡';
+}
+
+function getDeviceColors(type) {
+  const map = {
+    sensor: { ring: '#00e5ff', badge: 'blue' },
+    camara: { ring: '#9d5cf6', badge: 'purple' },
+    actuador: { ring: '#00ff88', badge: 'green' },
+    controlador: { ring: '#ffd60a', badge: 'yellow' },
+    gateway: { ring: '#ff9f0a', badge: 'orange' }
+  };
+  return map[type] || { ring: '#00e5ff', badge: 'blue' };
+}
+
+function getUptimePct(history) {
+  if (!history || history.length === 0) return 0;
+  const onCount = history.filter(h => h.status === 'online' && h.powered).length;
+  return Math.round((onCount / history.length) * 100);
+}
+
+function formatTimestamp(ts) {
+  const d = new Date(ts);
+  if (isNaN(d)) return 'N/A';
+  return d.toLocaleTimeString('es-MX', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+// ---- Fetch from MockAPI ----
+async function fetchDevices() {
+  const res = await fetch(`${BASE_URL}/devices`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  return data.map(d => ({ ...d, icon: d.icon || getIcon(d.type) }));
+}
+
+async function fetchHistory() {
+  const res = await fetch(`${BASE_URL}/statusHistory`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const all = await res.json();
+  // Group by deviceId, keep last 10 per device
+  const map = {};
+  all.forEach(h => {
+    if (!map[h.deviceId]) map[h.deviceId] = [];
+    map[h.deviceId].push(h);
+  });
+  // Sort each group by timestamp desc, keep 10
+  Object.keys(map).forEach(k => {
+    map[k].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    map[k] = map[k].slice(0, 10);
+  });
+  return map;
+}
+
+// ---- Render functions ----
+function renderSystemHealth() {
+  const online = devices.filter(d => d.status === 'online').length;
+  const powered = devices.filter(d => d.powered).length;
+  const offline = devices.filter(d => d.status === 'offline').length;
+  const totalHistory = Object.values(statusHistoryMap).reduce((s, a) => s + a.length, 0);
+  const avgUptime = devices.length > 0
+    ? Math.round(devices.reduce((sum, d) => sum + getUptimePct(statusHistoryMap[d.id] || []), 0) / devices.length)
+    : 0;
+
+  document.getElementById('systemHealth').innerHTML = `
+    <div class="health-metric">
+      <div class="health-value" style="color:var(--accent)">${devices.length}</div>
+      <div class="health-label">Total Dispositivos</div>
+    </div>
+    <div class="health-metric">
+      <div class="health-value" style="color:var(--green)">${online}</div>
+      <div class="health-label">En Línea</div>
+    </div>
+    <div class="health-metric">
+      <div class="health-value" style="color:var(--accent)">${powered}</div>
+      <div class="health-label">Encendidos</div>
+    </div>
+    <div class="health-metric">
+      <div class="health-value" style="color:var(--red)">${offline}</div>
+      <div class="health-label">Fuera de Línea</div>
+    </div>
+    <div class="health-metric">
+      <div class="health-value" style="color:var(--yellow)">${avgUptime}%</div>
+      <div class="health-label">Uptime Promedio</div>
+    </div>
+    <div class="health-metric">
+      <div class="health-value" style="color:var(--purple)">${refreshCycle}</div>
+      <div class="health-label">Ciclos de Refresco</div>
+    </div>
+  `;
+}
+
+function renderOverviewGrid() {
+  const grid = document.getElementById('overviewGrid');
+  if (devices.length === 0) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted);font-family:var(--font-mono);font-size:0.85rem">
+      📡 Sin dispositivos. <a href="iot-admin.html" style="color:var(--accent)">Crear desde Admin →</a>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = '';
+
+  devices.forEach(d => {
+    const colors = getDeviceColors(d.type);
+    const history = statusHistoryMap[d.id] || [];
+    const uptime = getUptimePct(history);
+    const circumference = 238;
+    const dashOffset = circumference - (circumference * uptime / 100);
+    const isOnline = d.status === 'online';
+    const ringColor = isOnline && d.powered ? colors.ring : (isOnline ? '#3a5a72' : '#ff3b30');
+
+    const card = document.createElement('div');
+    card.className = `device-status-card ${d.status}`;
+    card.innerHTML = `
+      <div class="status-ring-wrapper">
+        <div class="status-ring">
+          <svg width="90" height="90" viewBox="0 0 90 90">
+            <circle class="ring-bg" cx="45" cy="45" r="38"/>
+            <circle class="ring-fg" cx="45" cy="45" r="38"
+              style="stroke:${ringColor}; stroke-dashoffset:${dashOffset}"
+              id="ring-${d.id}"/>
+          </svg>
+          <span class="emoji">${d.icon}</span>
+        </div>
+      </div>
+      <div class="card-title">${d.name}</div>
+      <div class="card-location">📍 ${d.location}</div>
+      <div class="metric-row">
+        <span class="metric-key">Uptime</span>
+        <span class="metric-val ${colors.badge}">${uptime}%</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-key">Valor</span>
+        <span class="metric-val purple">${d.value || 'N/A'}</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-key">Protocolo</span>
+        <span class="metric-val" style="color:var(--muted)">${d.protocol || 'N/A'}</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-key">Lecturas</span>
+        <span class="metric-val blue">${history.length}</span>
+      </div>
+      <div class="sparkline-wrapper">
+        <canvas class="sparkline" id="spark-${d.id}" width="240" height="32"></canvas>
+      </div>
+      <div class="badges-row">
+        <span class="status-badge ${d.status}"><span class="sbdot${isOnline ? ' pulse' : ''}"></span>${d.status.toUpperCase()}</span>
+        ${d.powered ? '<span class="status-badge powered"><span class="sbdot pulse"></span>ENCENDIDO</span>' : ''}
+      </div>
+    `;
+    grid.appendChild(card);
+    requestAnimationFrame(() => drawSparkline(d.id, history, colors.ring));
+  });
+}
+
+function drawSparkline(deviceId, history, color) {
+  const canvas = document.getElementById(`spark-${deviceId}`);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.offsetWidth || 240;
+  const h = 32;
+  canvas.width = w; canvas.height = h;
+  ctx.clearRect(0, 0, w, h);
+  if (history.length < 2) return;
+
+  const last10 = [...history].reverse().slice(0, 10);
+  const vals = last10.map(h => h.powered ? 1 : 0);
+
+  ctx.fillStyle = color + '22';
+  ctx.beginPath();
+  vals.forEach((v, i) => {
+    const x = (i / (vals.length - 1)) * w;
+    const y = v === 1 ? h * 0.2 : h * 0.8;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath(); ctx.fill();
+
+  ctx.beginPath();
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+  ctx.shadowColor = color; ctx.shadowBlur = 4;
+  vals.forEach((v, i) => {
+    const x = (i / (vals.length - 1)) * w;
+    const y = v === 1 ? h * 0.2 : h * 0.8;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+}
+
+function renderActivityChart() {
+  const canvas = document.getElementById('activityChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.offsetWidth || 800;
+  const h = 120;
+  canvas.width = w; canvas.height = h;
+  ctx.clearRect(0, 0, w, h);
+  if (activityData.length < 2) return;
+
+  const max = Math.max(...activityData, 1);
+  const pad = { top: 10, bottom: 30, left: 40, right: 20 };
+  const chartW = w - pad.left - pad.right;
+  const chartH = h - pad.top - pad.bottom;
+
+  ctx.strokeStyle = 'rgba(26,46,66,0.8)'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (chartH / 4) * i;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w - pad.right, y); ctx.stroke();
+    ctx.fillStyle = '#3a5a72'; ctx.font = '10px Space Mono'; ctx.textAlign = 'right';
+    ctx.fillText(Math.round(max - (max / 4) * i), pad.left - 5, y + 4);
+  }
+
+  const barW = (chartW / activityData.length) * 0.6;
+  const barGap = (chartW / activityData.length) * 0.4;
+  activityData.forEach((v, i) => {
+    const x = pad.left + (chartW / activityData.length) * i + barGap / 2;
+    const barH = (v / max) * chartH;
+    const y = pad.top + chartH - barH;
+    const grad = ctx.createLinearGradient(0, y, 0, pad.top + chartH);
+    grad.addColorStop(0, '#00e5ff'); grad.addColorStop(1, '#00e5ff22');
+    ctx.fillStyle = grad;
+    ctx.fillRect(x, y, barW, barH);
+    ctx.fillStyle = '#3a5a72'; ctx.font = '9px Space Mono'; ctx.textAlign = 'center';
+    ctx.fillText(`T-${activityData.length - i - 1}`, x + barW / 2, h - 8);
+  });
+}
+
+function renderHistorySection() {
+  const section = document.getElementById('historySection');
+  section.innerHTML = '';
+
+  devices.forEach(d => {
+    const history = statusHistoryMap[d.id] || [];
+    const block = document.createElement('div');
+    block.className = 'device-history-block';
+    block.innerHTML = `
+      <div class="history-block-header">
+        <div class="history-block-title">
+          <span class="history-block-icon">${d.icon}</span>
+          <div>
+            <div style="font-size:0.95rem">${d.name}</div>
+            <div style="font-family:var(--font-mono);font-size:0.68rem;color:var(--muted);margin-top:0.1rem">${d.id} · ${d.location} · ${d.protocol || 'N/A'}</div>
+          </div>
+        </div>
+        <span class="status-badge ${d.status}" style="flex-shrink:0">
+          <span class="sbdot${d.status === 'online' ? ' pulse' : ''}"></span>
+          ${d.status.toUpperCase()}
+        </span>
+      </div>
+      <table class="history-table">
+        <thead>
+          <tr><th>#</th><th>Timestamp</th><th>Conexión</th><th>Alimentación</th><th>Valor Registrado</th></tr>
+        </thead>
+        <tbody id="history-body-${d.id}"></tbody>
+      </table>
+    `;
+    section.appendChild(block);
+
+    const tbody = document.getElementById(`history-body-${d.id}`);
+    if (history.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:1.5rem;font-family:var(--font-mono);font-size:0.8rem">Sin historial en MockAPI aún. Usa Control para activar dispositivos.</td></tr>';
+      return;
+    }
+
+    history.forEach((h, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="row-index">${String(idx+1).padStart(2,'0')}</td>
+        <td class="cell-timestamp">${formatTimestamp(h.timestamp)}${idx === 0 ? ' <span style="color:var(--accent);font-size:0.6rem">● ÚLTIMO</span>' : ''}</td>
+        <td class="cell-status"><span style="color:${h.status === 'online' ? 'var(--green)' : 'var(--red)'}">${h.status === 'online' ? '▲ ONLINE' : '▼ OFFLINE'}</span></td>
+        <td class="cell-powered"><span style="color:${h.powered ? 'var(--accent)' : 'var(--muted)'}">${h.powered ? '⬛ ON' : '⬜ OFF'}</span></td>
+        <td class="cell-value">${h.value || '—'}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  });
+}
+
+// =====================================================
+// Main refresh loop — pulls real data from MockAPI
+// =====================================================
+let countdown = 2;
+
+async function fullRefresh() {
+  refreshCycle++;
+  try {
+    [devices, statusHistoryMap] = await Promise.all([fetchDevices(), fetchHistory()]);
+  } catch(e) {
+    console.warn('MockAPI fetch error:', e.message);
+  }
+
+  const onlineCount = devices.filter(d => d.powered && d.status === 'online').length;
+  activityData.push(onlineCount);
+  if (activityData.length > 10) activityData.shift();
+
+  renderSystemHealth();
+  renderOverviewGrid();
+  renderHistorySection();
+  renderActivityChart();
+  countdown = 2;
+}
+
+setInterval(() => {
+  countdown--;
+  const el = document.getElementById('countdown');
+  if (el) el.textContent = countdown;
+  if (countdown <= 0) fullRefresh();
+}, 1000);
+
+fullRefresh();
+</script>
+</body>
+</html>

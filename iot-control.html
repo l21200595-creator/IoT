@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IoT Control — Panel de Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c14;
+    --surface: #0d1422;
+    --surface2: #131d30;
+    --surface3: #1a2640;
+    --border: #1e3048;
+    --accent: #00ff88;
+    --accent2: #0088ff;
+    --warn: #ff9500;
+    --danger: #ff3b30;
+    --purple: #bf5af2;
+    --text: #e8f4f8;
+    --muted: #4a6282;
+    --font-mono: 'Space Mono', monospace;
+    --font-display: 'Syne', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-display); min-height: 100vh; }
+
+  /* Animated background */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: 
+      radial-gradient(ellipse 80% 50% at 20% 20%, rgba(0,136,255,0.05) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(0,255,136,0.04) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .app-wrapper { position: relative; z-index: 1; }
+
+  .top-nav {
+    background: rgba(13,20,34,0.95);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    height: 64px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .brand { font-size: 1.1rem; font-weight: 800; letter-spacing: 0.08em; color: var(--accent); text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
+  .brand-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
+  .nav-links { display: flex; gap: 0.5rem; }
+  .nav-link-btn { padding: 0.4rem 1rem; border-radius: 6px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); text-decoration: none; transition: all 0.2s; border: 1px solid transparent; }
+  .nav-link-btn:hover { color: var(--accent); border-color: var(--border); background: var(--surface2); }
+  .nav-link-btn.active { color: var(--accent); border-color: var(--accent); background: rgba(0,255,136,0.08); }
+
+  .main-content { padding: 2rem; max-width: 1600px; margin: 0 auto; }
+  .page-header { margin-bottom: 2rem; display: flex; align-items: flex-end; justify-content: space-between; }
+  .page-title { font-size: 2rem; font-weight: 800; }
+  .page-title span { color: var(--accent); }
+  .page-subtitle { color: var(--muted); font-family: var(--font-mono); font-size: 0.8rem; margin-top: 0.5rem; }
+
+  /* Master controls */
+  .master-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.2rem 1.8rem;
+    margin-bottom: 2rem;
+    display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;
+  }
+  .master-label { font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .master-btn {
+    padding: 0.5rem 1.4rem;
+    border-radius: 8px;
+    border: 1px solid;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .master-btn.all-on { background: rgba(0,255,136,0.1); border-color: var(--accent); color: var(--accent); }
+  .master-btn.all-on:hover { background: rgba(0,255,136,0.2); }
+  .master-btn.all-off { background: rgba(255,59,48,0.1); border-color: var(--danger); color: var(--danger); }
+  .master-btn.all-off:hover { background: rgba(255,59,48,0.2); }
+  .live-badge { margin-left: auto; display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent); }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: livePulse 1.5s infinite; }
+  @keyframes livePulse { 0%,100%{box-shadow:0 0 0 0 rgba(0,255,136,0.4)} 50%{box-shadow:0 0 0 6px rgba(0,255,136,0)} }
+
+  /* Device grid */
+  .devices-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+
+  .device-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.3s;
+    position: relative;
+  }
+  .device-card:hover { transform: translateY(-2px); }
+  .device-card.powered { border-color: rgba(0,255,136,0.3); }
+  .device-card.powered .card-glow {
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+
+  .card-header {
+    padding: 1.5rem 1.5rem 1rem;
+    display: flex; align-items: flex-start; justify-content: space-between;
+  }
+  .device-icon {
+    width: 52px; height: 52px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem;
+    position: relative;
+    transition: all 0.3s;
+  }
+  .device-card.powered .device-icon {
+    background: rgba(0,255,136,0.08);
+    border-color: rgba(0,255,136,0.2);
+    box-shadow: 0 0 20px rgba(0,255,136,0.1);
+  }
+
+  .device-info { flex: 1; margin-left: 1rem; }
+  .device-name-ctrl { font-size: 1rem; font-weight: 700; line-height: 1.2; }
+  .device-meta { font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); margin-top: 0.3rem; }
+  .device-location-tag {
+    display: inline-block;
+    background: rgba(0,136,255,0.1);
+    border: 1px solid rgba(0,136,255,0.2);
+    color: var(--accent2);
+    padding: 0.15rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-family: var(--font-mono);
+    margin-top: 0.3rem;
+  }
+
+  /* Toggle Switch */
+  .toggle-switch {
+    position: relative;
+    width: 56px; height: 28px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .toggle-switch input { display: none; }
+  .toggle-track {
+    position: absolute; inset: 0;
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    transition: all 0.3s;
+  }
+  .toggle-switch input:checked ~ .toggle-track {
+    background: rgba(0,255,136,0.15);
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(0,255,136,0.2);
+  }
+  .toggle-thumb {
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 20px; height: 20px;
+    background: var(--muted);
+    border-radius: 50%;
+    transition: all 0.3s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+  .toggle-switch input:checked ~ .toggle-thumb {
+    left: 31px;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  /* Status Section */
+  .card-status {
+    margin: 0 1.5rem;
+    padding: 1rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .status-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+  .status-row:last-child { margin-bottom: 0; }
+  .status-key { font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .status-val { font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700; }
+  .status-val.green { color: var(--accent); }
+  .status-val.red { color: var(--danger); }
+  .status-val.blue { color: var(--accent2); }
+  .status-val.yellow { color: var(--warn); }
+  .status-val.purple { color: var(--purple); }
+
+  /* Progress bar for values */
+  .value-bar {
+    width: 100%;
+    height: 3px;
+    background: var(--surface3);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 0.3rem;
+  }
+  .value-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    transition: width 0.5s ease;
+  }
+
+  /* Card footer */
+  .card-footer {
+    padding: 1rem 1.5rem 1.5rem;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .connection-status {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted);
+  }
+  .conn-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+  .conn-dot.connected { background: var(--accent); animation: livePulse 2s infinite; }
+  .conn-dot.error { background: var(--danger); animation: pulse 1s infinite; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .btn-details {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--accent2);
+    border: 1px solid rgba(0,136,255,0.3);
+    background: rgba(0,136,255,0.07);
+    padding: 0.3rem 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-details:hover { background: rgba(0,136,255,0.15); }
+
+  /* Signal strength */
+  .signal {
+    display: flex; align-items: flex-end; gap: 2px; height: 14px;
+  }
+  .sig-bar {
+    width: 4px; border-radius: 1px; background: var(--border);
+    transition: background 0.3s;
+  }
+  .sig-bar.active { background: var(--accent2); }
+  .sig-bar:nth-child(1) { height: 4px; }
+  .sig-bar:nth-child(2) { height: 7px; }
+  .sig-bar:nth-child(3) { height: 10px; }
+  .sig-bar:nth-child(4) { height: 14px; }
+
+  /* Action log */
+  .action-log {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+  }
+  .log-title { font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+  .log-entries { max-height: 200px; overflow-y: auto; }
+  .log-entry { display: flex; align-items: center; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid rgba(30,48,72,0.5); font-family: var(--font-mono); font-size: 0.75rem; }
+  .log-entry:last-child { border-bottom: none; }
+  .log-time { color: var(--muted); flex-shrink: 0; }
+  .log-msg { color: var(--text); }
+  .log-msg .on { color: var(--accent); }
+  .log-msg .off { color: var(--muted); }
+
+  /* Loading skeleton */
+  .skeleton {
+    background: linear-gradient(90deg, var(--surface2) 25%, var(--surface3) 50%, var(--surface2) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 8px;
+  }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+</style>
+</head>
+<body>
+<div class="app-wrapper">
+
+  <nav class="top-nav">
+    <div class="brand">
+      <div class="brand-icon">⚡</div>
+      NEXUS<span style="color:var(--muted)">·</span>IOT
+    </div>
+    <div class="nav-links">
+      <a href="iot-admin.html" class="nav-link-btn">Admin</a>
+      <a href="iot-control.html" class="nav-link-btn active">Control</a>
+      <a href="iot-monitor.html" class="nav-link-btn">Monitor</a>
+    </div>
+  </nav>
+
+  <div class="main-content">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Panel de <span>Control</span></div>
+        <div class="page-subtitle">// Device Control · Toggle Switches · Real-Time Status</div>
+      </div>
+    </div>
+
+    <!-- Master Bar -->
+    <div class="master-bar">
+      <span class="master-label">Control Global:</span>
+      <button class="master-btn all-on" onclick="setAll(true)">⬛ ENCENDER TODO</button>
+      <button class="master-btn all-off" onclick="setAll(false)">⬜ APAGAR TODO</button>
+      <div class="live-badge">
+        <div class="live-dot"></div>
+        LIVE · Refresco 2s
+      </div>
+    </div>
+
+    <!-- Devices Grid -->
+    <div class="devices-grid" id="devicesGrid"></div>
+
+    <!-- Action Log -->
+    <div class="action-log">
+      <div class="log-title">// LOG DE ACCIONES</div>
+      <div class="log-entries" id="actionLog"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// =====================================================
+// MOCKAPI REAL CONNECTION
+// =====================================================
+const BASE_URL = 'https://698a1772c04d974bc6a1532f.mockapi.io/api/v1';
+
+let devices = [];
+const actionLog = [];
+
+function getIcon(type) {
+  const icons = { sensor: '🔬', actuador: '⚙️', camara: '📷', controlador: '🎛️', gateway: '🔀' };
+  return icons[type] || '📡';
+}
+
+function getSimulatedValue(device) {
+  if (!device.powered) return 'APAGADO';
+  switch(device.type) {
+    case 'sensor':      return `${(20 + Math.random()*10).toFixed(1)}°C / ${Math.floor(50+Math.random()*30)}%`;
+    case 'camara':      return 'Streaming ●';
+    case 'actuador':    return 'ENCENDIDO';
+    case 'controlador': return `Modo: AUTO / ${Math.floor(Math.random()*100)}%`;
+    case 'gateway':     return `${devices.length} devices · ${Math.floor(Math.random()*20+1)}ms`;
+    default:            return 'ACTIVO';
+  }
+}
+
+function getSignalStrength(device) {
+  if (!device.powered || device.status === 'offline') return 0;
+  return Math.floor(Math.random() * 2) + 2;
+}
+
+// POST a status history record to MockAPI
+async function pushHistory(device) {
+  try {
+    await fetch(`${BASE_URL}/statusHistory`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        deviceId: device.id,
+        timestamp: new Date().toISOString(),
+        status: device.status,
+        powered: device.powered,
+        value: device.value
+      })
+    });
+  } catch(e) { /* silent */ }
+}
+
+// PUT updated device state to MockAPI
+async function patchDevice(device) {
+  try {
+    await fetch(`${BASE_URL}/devices/${device.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        powered: device.powered,
+        value: device.value,
+        lastPing: new Date().toISOString()
+      })
+    });
+  } catch(e) { /* silent */ }
+}
+
+async function toggleDevice(id) {
+  const device = devices.find(d => d.id === id);
+  if (!device) return;
+  if (device.status === 'offline') {
+    addLog(`⚠️ ${device.name} está offline — no se puede controlar`);
+    return;
+  }
+
+  device.powered = !device.powered;
+  device.value = getSimulatedValue(device);
+  device.lastPing = new Date().toISOString();
+
+  renderDevices();
+  addLog(`${device.powered ? '🟢' : '🔴'} ${device.name} → ${device.powered ? '<span class="on">ENCENDIDO</span>' : '<span class="off">APAGADO</span>'}`);
+
+  // Persist to MockAPI (non-blocking)
+  patchDevice(device);
+  pushHistory(device);
+}
+
+async function setAll(powered) {
+  const onlineDevices = devices.filter(d => d.status !== 'offline');
+  onlineDevices.forEach(d => {
+    d.powered = powered;
+    d.value = powered ? getSimulatedValue(d) : 'APAGADO';
+    d.lastPing = new Date().toISOString();
+  });
+
+  renderDevices();
+  addLog(`${powered ? '🟢 Todos los dispositivos ENCENDIDOS' : '🔴 Todos los dispositivos APAGADOS'}`);
+
+  // Persist all to MockAPI in parallel
+  await Promise.allSettled([
+    ...onlineDevices.map(d => patchDevice(d)),
+    ...onlineDevices.map(d => pushHistory(d))
+  ]);
+}
+
+function addLog(msg) {
+  const time = new Date().toLocaleTimeString('es-MX', {hour12: false});
+  actionLog.unshift({ time, msg });
+  if (actionLog.length > 30) actionLog.pop();
+  renderLog();
+}
+
+function renderLog() {
+  const el = document.getElementById('actionLog');
+  el.innerHTML = actionLog.slice(0,10).map(l =>
+    `<div class="log-entry"><span class="log-time">${l.time}</span><span class="log-msg">${l.msg}</span></div>`
+  ).join('') || '<div style="color:var(--muted);font-family:var(--font-mono);font-size:0.75rem;padding:0.5rem 0">No hay acciones registradas aún.</div>';
+}
+
+function renderDevices() {
+  const grid = document.getElementById('devicesGrid');
+  if (devices.length === 0) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted);font-family:var(--font-mono);font-size:0.85rem">
+      📡 No hay dispositivos registrados. <a href="iot-admin.html" style="color:var(--accent)">Crear desde Admin →</a>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = '';
+
+  devices.forEach(d => {
+    const isOnline = d.status === 'online';
+    const signal = getSignalStrength(d);
+    const pingAgo = (() => {
+      const diff = Math.floor((Date.now() - new Date(d.lastPing).getTime()) / 1000);
+      if (isNaN(diff) || diff < 0) return 'N/A';
+      if (diff < 60) return `${diff}s`;
+      return `${Math.floor(diff/60)}m`;
+    })();
+    const icon = d.icon || getIcon(d.type);
+
+    const card = document.createElement('div');
+    card.className = `device-card ${d.powered ? 'powered' : ''}`;
+    card.innerHTML = `
+      <div class="card-glow"></div>
+      <div class="card-header">
+        <div class="device-icon">${icon}</div>
+        <div class="device-info">
+          <div class="device-name-ctrl">${d.name}</div>
+          <div class="device-meta">${d.id} · ${d.protocol || 'N/A'}</div>
+          <div class="device-location-tag">📍 ${d.location}</div>
+        </div>
+        <label class="toggle-switch" onclick="event.preventDefault(); toggleDevice('${d.id}')">
+          <input type="checkbox" ${d.powered ? 'checked' : ''} ${!isOnline ? 'disabled' : ''}>
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </div>
+      <div class="card-status">
+        <div class="status-row">
+          <span class="status-key">Estado</span>
+          <span class="status-val ${d.powered ? 'green' : 'red'}">${d.powered ? '● ENCENDIDO' : '○ APAGADO'}</span>
+        </div>
+        <div class="status-row">
+          <span class="status-key">Conexión</span>
+          <span class="status-val ${isOnline ? 'blue' : 'red'}">${isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+        </div>
+        <div class="status-row">
+          <span class="status-key">Valor Actual</span>
+          <span class="status-val purple">${d.value || 'N/A'}</span>
+        </div>
+        <div class="status-row">
+          <span class="status-key">IP</span>
+          <span class="status-val" style="color:var(--muted)">${d.ip || 'N/A'}</span>
+        </div>
+        ${d.type === 'sensor' && d.powered ? `
+        <div style="margin-top:0.5rem">
+          <div class="value-bar"><div class="value-fill" style="width:${Math.floor(Math.random()*60+20)}%"></div></div>
+        </div>` : ''}
+      </div>
+      <div class="card-footer">
+        <div class="connection-status">
+          <div class="conn-dot ${isOnline ? 'connected' : 'error'}"></div>
+          Ping: ${pingAgo} atrás &nbsp;&nbsp;
+          <div class="signal">
+            ${[1,2,3,4].map(i => `<div class="sig-bar ${i <= signal ? 'active' : ''}"></div>`).join('')}
+          </div>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--muted)">${(d.type||'').toUpperCase()}</div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// Load devices from MockAPI
+async function loadDevices() {
+  const grid = document.getElementById('devicesGrid');
+  grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted);font-family:var(--font-mono);font-size:0.8rem">
+    <div style="display:inline-block;width:24px;height:24px;border:2px solid #1a3a52;border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite"></div>
+    <br><br>Conectando con MockAPI...
+  </div>`;
+  try {
+    const res = await fetch(`${BASE_URL}/devices`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    devices = await res.json();
+    devices = devices.map(d => ({ ...d, icon: d.icon || getIcon(d.type) }));
+    renderDevices();
+    addLog(`✅ ${devices.length} dispositivos cargados desde MockAPI`);
+  } catch(err) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--danger);font-family:var(--font-mono);font-size:0.8rem">
+      ❌ Error: ${err.message}
+    </div>`;
+    addLog(`❌ Error conectando con MockAPI: ${err.message}`);
+  }
+}
+
+// Auto refresh every 2 seconds — re-fetch from MockAPI and update local sensor values
+let refreshTimer = setInterval(async () => {
+  try {
+    const res = await fetch(`${BASE_URL}/devices`);
+    if (!res.ok) return;
+    const fresh = await res.json();
+    // Merge: keep local powered state if it was just toggled (within 3s), else use server state
+    devices = fresh.map(d => ({
+      ...d,
+      icon: d.icon || getIcon(d.type),
+      // Simulate live sensor readings for powered online devices
+      value: (d.powered && d.status === 'online') ? getSimulatedValue(d) : (d.value || 'APAGADO')
+    }));
+    renderDevices();
+  } catch(e) { /* silent */ }
+}, 2000);
+
+loadDevices();
+addLog('🚀 Sistema de control iniciado');
+</script>
+</body>
+</html>
