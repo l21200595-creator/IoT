@@ -1,0 +1,133 @@
+/* ============================================================
+   NEXUS·IOT Smart Home — monitor.css
+   ============================================================ */
+
+/* ── Refresh bar ────────────────────────────────────────── */
+.refresh-indicator {
+  display: flex; align-items: center; gap: 0.7rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 30px; padding: 0.45rem 1.1rem;
+  font-family: var(--font-mono); font-size: 0.71rem;
+}
+.refresh-ring { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--rack); border-radius: 50%; animation: spin 2s linear infinite; }
+.refresh-count { color: var(--rack); font-weight: 700; }
+.refresh-label { color: var(--muted); }
+
+/* ── Section divider ────────────────────────────────────── */
+.section-sep {
+  font-family: var(--font-mono); font-size: 0.68rem;
+  color: var(--muted); text-transform: uppercase; letter-spacing: 0.15em;
+  margin: 2rem 0 1.2rem; padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 0.7rem;
+}
+.section-sep::before { content: '//'; color: var(--rack); }
+
+/* ── KPI strip ──────────────────────────────────────────── */
+.kpi-strip {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr));
+  gap: 1rem; margin-bottom: 2rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 1.3rem;
+}
+.kpi-cell { text-align: center; }
+.kpi-val  { font-family: var(--font-mono); font-size: 1.7rem; font-weight: 800; }
+.kpi-lbl  { font-family: var(--font-mono); font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 0.2rem; }
+.kpi-val.cyan   { color: var(--rack); }
+.kpi-val.green  { color: var(--access); }
+.kpi-val.yellow { color: var(--energy); }
+.kpi-val.red    { color: var(--danger); }
+.kpi-val.purple { color: var(--purple); }
+
+/* ── System overview cards ──────────────────────────────── */
+.systems-overview {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 1.5rem; margin-bottom: 2rem;
+}
+@media (max-width: 900px) { .systems-overview { grid-template-columns: 1fr; } }
+
+.sys-overview-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 18px; overflow: hidden;
+}
+.soc-header {
+  padding: 1.2rem 1.4rem; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 0.9rem;
+}
+.soc-icon  { font-size: 1.6rem; }
+.soc-title { font-weight: 700; font-size: 0.95rem; }
+.soc-sub   { font-family: var(--font-mono); font-size: 0.67rem; color: var(--muted); margin-top: 2px; }
+.soc-header.rack   { background: rgba(0,229,255,0.06); }
+.soc-header.access { background: rgba(0,255,157,0.05); }
+.soc-header.energy { background: rgba(255,179,0,0.05); }
+
+.soc-body { padding: 1.2rem 1.4rem; }
+.soc-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.45rem 0; border-bottom: 1px solid rgba(30,48,80,0.4);
+  font-family: var(--font-mono); font-size: 0.72rem;
+}
+.soc-row:last-child { border-bottom: none; }
+.soc-key { color: var(--muted); }
+.soc-val { font-weight: 700; }
+.soc-val.cyan   { color: var(--rack); }
+.soc-val.green  { color: var(--access); }
+.soc-val.yellow { color: var(--energy); }
+.soc-val.red    { color: var(--danger); }
+.soc-val.white  { color: var(--text); }
+
+/* Sparkline */
+.soc-sparkline { margin-top: 0.8rem; }
+.soc-canvas    { width: 100%; height: 36px; display: block; }
+
+/* ── Activity charts ────────────────────────────────────── */
+.charts-row {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 1.2rem; margin-bottom: 2rem;
+}
+@media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
+
+.chart-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 1.3rem;
+}
+.chart-card-title {
+  font-family: var(--font-mono); font-size: 0.68rem; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.8rem;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.chart-canvas { width: 100%; height: 100px; display: block; }
+
+/* ── Events timeline ────────────────────────────────────── */
+.events-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(380px,1fr));
+  gap: 1.2rem; margin-bottom: 2rem;
+}
+.event-table-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; overflow: hidden;
+}
+.etc-header {
+  background: var(--surface2); padding: 0.9rem 1.4rem;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono); font-size: 0.7rem;
+}
+.etc-title { font-weight: 700; display: flex; align-items: center; gap: 0.6rem; }
+.etc-count { color: var(--muted); }
+
+.event-table { width: 100%; border-collapse: collapse; }
+.event-table th {
+  padding: 0.6rem 1.1rem; font-family: var(--font-mono); font-size: 0.62rem;
+  text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
+  text-align: left; background: var(--surface2); border-bottom: 1px solid var(--border);
+}
+.event-table td {
+  padding: 0.65rem 1.1rem; font-family: var(--font-mono); font-size: 0.71rem;
+  border-bottom: 1px solid rgba(30,48,80,0.35); vertical-align: middle;
+}
+.event-table tr:last-child td { border-bottom: none; }
+.event-table tr:hover td { background: rgba(255,255,255,0.012); }
+.et-time { color: var(--muted); white-space: nowrap; }
+.et-val  { font-weight: 700; }
+.et-msg  { color: var(--text); }

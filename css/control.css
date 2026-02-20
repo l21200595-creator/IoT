@@ -1,0 +1,290 @@
+/* ============================================================
+   NEXUS·IOT Smart Home — control.css
+   Panel de control: 3 sistemas en tabs
+   ============================================================ */
+
+/* ── Tab system ─────────────────────────────────────────── */
+.sys-tabs {
+  display: flex; gap: 0; margin-bottom: 2rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 4px; width: fit-content;
+}
+.sys-tab {
+  padding: 0.55rem 1.4rem; border-radius: 9px; cursor: pointer;
+  font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700;
+  color: var(--muted); border: 1px solid transparent; transition: all 0.2s;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.sys-tab:hover { color: var(--text); }
+.sys-tab.active-rack   { background: rgba(0,229,255,0.12); color: var(--rack);   border-color: rgba(0,229,255,0.3); }
+.sys-tab.active-access { background: rgba(0,255,157,0.1);  color: var(--access); border-color: rgba(0,255,157,0.25); }
+.sys-tab.active-energy { background: rgba(255,179,0,0.1);  color: var(--energy); border-color: rgba(255,179,0,0.25); }
+.tab-alert-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--danger); animation: blink 1s infinite;
+}
+
+.sys-panel { display: none; }
+.sys-panel.active { display: block; }
+
+/* ══════════════════════════════════════════════════════════
+   SISTEMA 1 — SMART RACK
+   ══════════════════════════════════════════════════════════ */
+.rack-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 1.5rem; margin-bottom: 2rem;
+}
+@media (max-width: 900px) { .rack-grid { grid-template-columns: 1fr; } }
+
+/* Temp gauge card */
+.gauge-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 18px; padding: 1.8rem; display: flex; flex-direction: column; align-items: center;
+}
+.gauge-wrap { position: relative; width: 180px; height: 180px; margin-bottom: 1rem; }
+.gauge-canvas { width: 180px; height: 180px; }
+.gauge-center {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.gauge-value { font-family: var(--font-mono); font-size: 2.2rem; font-weight: 700; line-height: 1; }
+.gauge-unit  { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); }
+.gauge-label { font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; }
+
+/* Fan speed card */
+.fan-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 18px; padding: 1.8rem;
+}
+.fan-icon-wrap {
+  display: flex; justify-content: center; margin-bottom: 1.2rem;
+}
+.fan-icon {
+  font-size: 4rem; line-height: 1;
+  transition: transform 0.1s linear;
+}
+.fan-speed-bar { margin-top: 1rem; }
+.speed-label { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); margin-bottom: 0.4rem; }
+.speed-track { width: 100%; height: 8px; background: var(--surface3); border-radius: 4px; overflow: hidden; }
+.speed-fill  { height: 100%; border-radius: 4px; transition: width 0.8s ease, background 0.5s; background: var(--rack); }
+.speed-fill.hot  { background: var(--warn); }
+.speed-fill.crit { background: var(--danger); animation: blink 0.5s infinite; }
+
+/* Metrics row */
+.rack-metrics {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 1rem; margin-bottom: 1.5rem;
+}
+.metric-chip {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 1rem 1.2rem; text-align: center;
+}
+.metric-chip-val { font-family: var(--font-mono); font-size: 1.2rem; font-weight: 700; }
+.metric-chip-lbl { font-family: var(--font-mono); font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 0.25rem; }
+
+/* Emergency controls */
+.emergency-panel {
+  background: rgba(255,61,90,0.06); border: 1px solid rgba(255,61,90,0.3);
+  border-radius: 14px; padding: 1.4rem; margin-bottom: 1.5rem;
+}
+.emergency-title { font-family: var(--font-mono); font-size: 0.7rem; color: var(--danger); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 1rem; }
+.emergency-btns  { display: flex; gap: 0.8rem; flex-wrap: wrap; }
+.btn-emergency {
+  padding: 0.6rem 1.4rem; border-radius: 8px; border: 1px solid;
+  font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 0.5rem;
+}
+.btn-emergency.ssh  { border-color: var(--warn);   color: var(--warn);   background: rgba(255,179,0,0.08); }
+.btn-emergency.cut  { border-color: var(--danger);  color: var(--danger);  background: rgba(255,61,90,0.08); }
+.btn-emergency.fan  { border-color: var(--rack);    color: var(--rack);    background: rgba(0,229,255,0.08); }
+.btn-emergency:hover { filter: brightness(1.3); transform: translateY(-1px); }
+
+/* Countdown timer */
+.shutdown-countdown {
+  background: rgba(255,61,90,0.1); border: 1px solid rgba(255,61,90,0.4);
+  border-radius: 10px; padding: 1rem 1.4rem; display: none;
+  align-items: center; gap: 1rem; margin-top: 1rem;
+}
+.shutdown-countdown.active { display: flex; animation: blink 0.5s infinite; }
+.shutdown-timer { font-family: var(--font-mono); font-size: 1.8rem; font-weight: 700; color: var(--danger); }
+.btn-cancel-shutdown {
+  margin-left: auto; padding: 0.45rem 1.1rem; border-radius: 7px;
+  border: 1px solid var(--danger); background: transparent;
+  color: var(--danger); cursor: pointer; font-family: var(--font-mono); font-size: 0.75rem;
+  transition: all 0.2s;
+}
+.btn-cancel-shutdown:hover { background: rgba(255,61,90,0.15); }
+
+/* ══════════════════════════════════════════════════════════
+   SISTEMA 2 — PAQUETERÍA SEGURA
+   ══════════════════════════════════════════════════════════ */
+.access-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 1.5rem; margin-bottom: 2rem;
+}
+@media (max-width: 900px) { .access-grid { grid-template-columns: 1fr; } }
+
+.door-status-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 18px; padding: 1.6rem;
+}
+.door-visual {
+  width: 120px; height: 120px; margin: 0 auto 1.2rem;
+  background: var(--surface2); border: 2px solid var(--border);
+  border-radius: 16px; display: flex; align-items: center; justify-content: center;
+  font-size: 3.5rem; transition: all 0.4s;
+}
+.door-visual.alert { border-color: var(--danger); box-shadow: 0 0 20px rgba(255,61,90,0.3); animation: blink 1s infinite; }
+.door-visual.open  { border-color: var(--access); box-shadow: 0 0 20px rgba(0,255,157,0.2); }
+
+.sensor-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 0.8rem; margin-top: 1rem;
+}
+.sensor-chip {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 0.8rem 1rem;
+  display: flex; align-items: center; gap: 0.7rem;
+}
+.sensor-chip-icon { font-size: 1.2rem; }
+.sensor-chip-val  { font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700; }
+.sensor-chip-lbl  { font-family: var(--font-mono); font-size: 0.62rem; color: var(--muted); }
+
+.box-timer {
+  background: rgba(255,179,0,0.08); border: 1px solid rgba(255,179,0,0.3);
+  border-radius: 10px; padding: 0.9rem 1.2rem;
+  display: none; align-items: center; justify-content: space-between;
+  margin-top: 1rem;
+}
+.box-timer.active { display: flex; animation: blink 1.5s infinite; }
+.box-timer-val    { font-family: var(--font-mono); font-size: 1.4rem; font-weight: 700; color: var(--warn); }
+
+.access-controls { display: flex; flex-direction: column; gap: 0.8rem; }
+.btn-access {
+  padding: 0.8rem 1.4rem; border-radius: 10px; border: 1px solid;
+  font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; gap: 0.6rem; justify-content: center;
+}
+.btn-access.unlock { border-color: var(--access); color: var(--access); background: rgba(0,255,157,0.08); }
+.btn-access.lock   { border-color: var(--danger);  color: var(--danger);  background: rgba(255,61,90,0.08); }
+.btn-access.cam    { border-color: var(--rack);     color: var(--rack);    background: rgba(0,229,255,0.08); }
+.btn-access:hover  { filter: brightness(1.3); transform: translateY(-1px); }
+
+/* Event log */
+.access-log-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; overflow: hidden;
+}
+.log-header {
+  background: var(--surface2); padding: 1rem 1.5rem;
+  font-family: var(--font-mono); font-size: 0.68rem; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.12em;
+  border-bottom: 1px solid var(--border);
+}
+.log-scroll { max-height: 240px; overflow-y: auto; }
+.log-row {
+  display: flex; align-items: center; gap: 1rem; padding: 0.7rem 1.5rem;
+  border-bottom: 1px solid rgba(30,48,80,0.4); font-family: var(--font-mono); font-size: 0.72rem;
+}
+.log-row:last-child { border-bottom: none; }
+.log-time   { color: var(--muted); flex-shrink: 0; }
+.log-msg    { color: var(--text); flex: 1; }
+.log-ok     { color: var(--access); }
+.log-warn   { color: var(--warn); }
+.log-danger { color: var(--danger); }
+
+/* ══════════════════════════════════════════════════════════
+   SISTEMA 3 — ENERGÍA HOGAR
+   ══════════════════════════════════════════════════════════ */
+.travel-mode-bar {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 1.2rem 1.8rem; margin-bottom: 1.5rem;
+  display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;
+}
+.travel-label { font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+.travel-toggle { display: flex; align-items: center; gap: 0.8rem; }
+.toggle-switch { position: relative; width: 52px; height: 26px; cursor: pointer; }
+.toggle-switch input { display: none; }
+.toggle-track {
+  position: absolute; inset: 0; background: var(--surface3);
+  border: 1px solid var(--border); border-radius: 13px; transition: all 0.3s;
+}
+.toggle-switch input:checked ~ .toggle-track {
+  background: rgba(255,179,0,0.15); border-color: var(--energy);
+  box-shadow: 0 0 10px rgba(255,179,0,0.2);
+}
+.toggle-thumb {
+  position: absolute; top: 3px; left: 3px; width: 18px; height: 18px;
+  background: var(--muted); border-radius: 50%; transition: all 0.3s;
+}
+.toggle-switch input:checked ~ .toggle-thumb { left: 29px; background: var(--energy); box-shadow: 0 0 6px var(--energy); }
+.travel-status { font-family: var(--font-mono); font-size: 0.8rem; }
+.travel-status.active { color: var(--energy); font-weight: 700; }
+
+.energy-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr));
+  gap: 1.2rem; margin-bottom: 1.5rem;
+}
+.sector-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; overflow: hidden;
+}
+.sector-header {
+  background: var(--surface2); padding: 1rem 1.4rem;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.sector-title { font-weight: 700; display: flex; align-items: center; gap: 0.6rem; }
+.sector-body  { padding: 1.2rem 1.4rem; }
+
+.watt-display { font-family: var(--font-mono); font-size: 2rem; font-weight: 800; margin-bottom: 0.3rem; }
+.watt-display.normal { color: var(--access); }
+.watt-display.high   { color: var(--warn); animation: blink 1.5s infinite; }
+.watt-display.danger { color: var(--danger); animation: blink 0.8s infinite; }
+.watt-label   { font-family: var(--font-mono); font-size: 0.68rem; color: var(--muted); text-transform: uppercase; }
+
+.power-bar    { width: 100%; height: 5px; background: var(--surface3); border-radius: 3px; overflow: hidden; margin: 0.8rem 0; }
+.power-fill   { height: 100%; border-radius: 3px; transition: width 0.8s ease, background 0.5s; }
+
+.relay-controls { display: flex; gap: 0.6rem; margin-top: 0.8rem; }
+.btn-relay {
+  flex: 1; padding: 0.55rem; border-radius: 8px; border: 1px solid;
+  font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700;
+  cursor: pointer; text-align: center; transition: all 0.2s;
+}
+.btn-relay.on  { border-color: var(--access);  color: var(--access);  background: rgba(0,255,157,0.08); }
+.btn-relay.off { border-color: var(--danger);   color: var(--danger);   background: rgba(255,61,90,0.08); }
+.btn-relay:hover { filter: brightness(1.3); }
+
+/* Gas alert card */
+.gas-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 1.4rem; margin-bottom: 1.5rem;
+}
+.gas-card.alerting {
+  border-color: rgba(255,61,90,0.5); background: rgba(255,61,90,0.05);
+  animation: blink 0.5s infinite;
+}
+.gas-reading { display: flex; align-items: baseline; gap: 0.5rem; margin: 0.8rem 0; }
+.gas-val  { font-family: var(--font-mono); font-size: 2.5rem; font-weight: 800; }
+.gas-unit { font-family: var(--font-mono); font-size: 0.85rem; color: var(--muted); }
+.gas-bar  { width: 100%; height: 10px; background: var(--surface3); border-radius: 5px; overflow: hidden; margin-bottom: 1rem; }
+.gas-fill { height: 100%; border-radius: 5px; transition: width 0.8s ease, background 0.5s; }
+
+.btn-valve {
+  padding: 0.6rem 1.4rem; border-radius: 8px; border: 1px solid;
+  font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-valve.open  { border-color: var(--access); color: var(--access); background: rgba(0,255,157,0.08); }
+.btn-valve.close { border-color: var(--danger);  color: var(--danger);  background: rgba(255,61,90,0.08); }
+.btn-valve:hover { filter: brightness(1.3); transform: translateY(-1px); }
+
+/* Action log compartido */
+.action-log {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 1.4rem; margin-top: 1.5rem;
+}
+.log-title { font-family: var(--font-mono); font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.8rem; }
+.log-entries { max-height: 190px; overflow-y: auto; }

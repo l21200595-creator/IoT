@@ -1,422 +1,118 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IoT Admin — Gestión de Dispositivos</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #0a0e1a;
-    --surface: #111827;
-    --surface2: #1a2235;
-    --border: #2a3a52;
-    --accent: #00d4ff;
-    --accent2: #7c3aed;
-    --success: #10b981;
-    --danger: #ef4444;
-    --warn: #f59e0b;
-    --text: #e2e8f0;
-    --muted: #64748b;
-    --font-mono: 'Space Mono', monospace;
-    --font-display: 'Syne', sans-serif;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: var(--font-display); min-height: 100vh; }
-  
-  /* Grid background */
-  body::before {
-    content: '';
-    position: fixed; inset: 0;
-    background-image: 
-      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none; z-index: 0;
-  }
-
-  .app-wrapper { position: relative; z-index: 1; }
-
-  /* Header */
-  .top-nav {
-    background: rgba(17,24,39,0.9);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-    padding: 0 2rem;
-    height: 64px;
-    display: flex; align-items: center; justify-content: space-between;
-    position: sticky; top: 0; z-index: 100;
-  }
-  .brand {
-    font-size: 1.1rem; font-weight: 800; letter-spacing: 0.08em;
-    color: var(--accent); text-transform: uppercase;
-    display: flex; align-items: center; gap: 10px;
-  }
-  .brand-icon {
-    width: 32px; height: 32px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.9rem;
-  }
-  .nav-links { display: flex; gap: 0.5rem; }
-  .nav-link-btn {
-    padding: 0.4rem 1rem;
-    border-radius: 6px;
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    color: var(--muted);
-    text-decoration: none;
-    transition: all 0.2s;
-    border: 1px solid transparent;
-  }
-  .nav-link-btn:hover { color: var(--accent); border-color: var(--border); background: var(--surface2); }
-  .nav-link-btn.active { color: var(--accent); border-color: var(--accent); background: rgba(0,212,255,0.08); }
-
-  .main-content { padding: 2rem; max-width: 1400px; margin: 0 auto; }
-
-  /* Page header */
-  .page-header { margin-bottom: 2rem; }
-  .page-title { font-size: 2rem; font-weight: 800; line-height: 1; }
-  .page-title span { color: var(--accent); }
-  .page-subtitle { color: var(--muted); font-family: var(--font-mono); font-size: 0.8rem; margin-top: 0.5rem; }
-
-  /* Stats bar */
-  .stats-bar {
-    display: grid; grid-template-columns: repeat(4, 1fr);
-    gap: 1rem; margin-bottom: 2rem;
-  }
-  .stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.2rem 1.5rem;
-    position: relative; overflow: hidden;
-  }
-  .stat-card::before {
-    content: '';
-    position: absolute; top: 0; left: 0; right: 0; height: 2px;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
-  }
-  .stat-value { font-size: 2rem; font-weight: 800; font-family: var(--font-mono); }
-  .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 0.2rem; }
-  .stat-value.green { color: var(--success); }
-  .stat-value.red { color: var(--danger); }
-  .stat-value.yellow { color: var(--warn); }
-
-  /* Toolbar */
-  .toolbar {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap;
-  }
-  .search-box {
-    position: relative; flex: 1; max-width: 320px;
-  }
-  .search-box input {
-    width: 100%;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 0.6rem 1rem 0.6rem 2.5rem;
-    border-radius: 8px;
-    font-family: var(--font-mono);
-    font-size: 0.8rem;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  .search-box input:focus { border-color: var(--accent); }
-  .search-box .icon { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 0.9rem; }
-  
-  .btn-add {
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border: none; color: #fff;
-    padding: 0.6rem 1.5rem;
-    border-radius: 8px;
-    font-family: var(--font-display);
-    font-weight: 600;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: opacity 0.2s, transform 0.1s;
-    display: flex; align-items: center; gap: 0.5rem;
-  }
-  .btn-add:hover { opacity: 0.9; transform: translateY(-1px); }
-
-  /* Table */
-  .table-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    overflow: hidden;
-  }
-  .table-card table { width: 100%; border-collapse: collapse; }
-  .table-card thead tr {
-    background: var(--surface2);
-    border-bottom: 1px solid var(--border);
-  }
-  .table-card th {
-    padding: 1rem 1.5rem;
-    font-family: var(--font-mono);
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: var(--muted);
-    text-align: left;
-    font-weight: 400;
-  }
-  .table-card td {
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid rgba(42,58,82,0.5);
-    font-size: 0.9rem;
-    vertical-align: middle;
-  }
-  .table-card tbody tr:last-child td { border-bottom: none; }
-  .table-card tbody tr:hover { background: rgba(255,255,255,0.02); }
-
-  .device-icon-cell {
-    width: 44px; height: 44px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.4rem;
-  }
-  .device-name { font-weight: 600; }
-  .device-id { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); }
-
-  .badge-type {
-    background: rgba(124,58,237,0.2);
-    color: #a78bfa;
-    border: 1px solid rgba(124,58,237,0.3);
-    padding: 0.2rem 0.7rem;
-    border-radius: 20px;
-    font-size: 0.72rem;
-    font-family: var(--font-mono);
-  }
-  .badge-location {
-    background: rgba(0,212,255,0.1);
-    color: var(--accent);
-    border: 1px solid rgba(0,212,255,0.2);
-    padding: 0.2rem 0.7rem;
-    border-radius: 20px;
-    font-size: 0.72rem;
-    font-family: var(--font-mono);
-  }
-
-  .status-dot {
-    display: inline-flex; align-items: center; gap: 6px;
-    font-size: 0.8rem;
-  }
-  .dot {
-    width: 8px; height: 8px; border-radius: 50%;
-  }
-  .dot.on { background: var(--success); box-shadow: 0 0 6px var(--success); }
-  .dot.off { background: var(--muted); }
-  .dot.error { background: var(--danger); box-shadow: 0 0 6px var(--danger); animation: pulse 1s infinite; }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
-  }
-
-  .action-btns { display: flex; gap: 0.5rem; }
-  .btn-icon {
-    width: 32px; height: 32px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    background: var(--surface2);
-    color: var(--muted);
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.8rem;
-    transition: all 0.2s;
-  }
-  .btn-icon:hover.edit { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.1); }
-  .btn-icon:hover.del { border-color: var(--danger); color: var(--danger); background: rgba(239,68,68,0.1); }
-
-  /* Modal */
-  .modal-overlay {
-    position: fixed; inset: 0; z-index: 999;
-    background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
-    display: flex; align-items: center; justify-content: center;
-    opacity: 0; pointer-events: none; transition: opacity 0.2s;
-  }
-  .modal-overlay.open { opacity: 1; pointer-events: all; }
-  .modal-box {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 2rem;
-    width: 100%; max-width: 540px;
-    transform: translateY(20px); transition: transform 0.2s;
-    position: relative;
-  }
-  .modal-overlay.open .modal-box { transform: translateY(0); }
-  .modal-title { font-size: 1.3rem; font-weight: 800; margin-bottom: 1.5rem; }
-  .modal-title span { color: var(--accent); }
-
-  .form-group { margin-bottom: 1.2rem; }
-  .form-label { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.4rem; display: block; }
-  .form-control-custom {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 0.7rem 1rem;
-    border-radius: 8px;
-    font-family: var(--font-display);
-    font-size: 0.9rem;
-    outline: none;
-    transition: border-color 0.2s;
-    appearance: none;
-  }
-  .form-control-custom:focus { border-color: var(--accent); }
-  .form-control-custom option { background: var(--surface2); }
-
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-
-  .modal-footer { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
-  .btn-cancel {
-    padding: 0.6rem 1.5rem;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--muted);
-    cursor: pointer;
-    font-family: var(--font-display);
-    font-size: 0.85rem;
-    transition: all 0.2s;
-  }
-  .btn-cancel:hover { border-color: var(--text); color: var(--text); }
-  .btn-save {
-    padding: 0.6rem 1.5rem;
-    border-radius: 8px;
-    border: none;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: #fff;
-    cursor: pointer;
-    font-family: var(--font-display);
-    font-weight: 600;
-    font-size: 0.85rem;
-    transition: opacity 0.2s;
-  }
-  .btn-save:hover { opacity: 0.9; }
-
-  /* Toast */
-  .toast-container { position: fixed; bottom: 2rem; right: 2rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; }
-  .toast-item {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 0.8rem 1.2rem;
-    font-size: 0.85rem;
-    display: flex; align-items: center; gap: 0.7rem;
-    animation: slideIn 0.3s ease; min-width: 260px;
-    border-left: 3px solid var(--success);
-  }
-  .toast-item.error { border-left-color: var(--danger); }
-  @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-
-  .empty-state { text-align: center; padding: 4rem 2rem; color: var(--muted); }
-  .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
-  .empty-state p { font-family: var(--font-mono); font-size: 0.85rem; }
-</style>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEXUS·IOT — Admin Smart Home</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%2305080f'/><text y='.9em' font-size='80' x='10'>🗂️</text></svg>">
+  <link rel="stylesheet" href="css/estilos.css">
+  <link rel="stylesheet" href="css/admin.css">
 </head>
 <body>
 <div class="app-wrapper">
 
-  <!-- Navigation -->
   <nav class="top-nav">
-    <div class="brand">
-      <div class="brand-icon">⚡</div>
-      NEXUS<span style="color:var(--muted)">·</span>IOT
-    </div>
+    <a class="brand" href="index.html">
+      <div class="brand-icon">🏠</div>
+      <div>NEXUS<span style="color:var(--muted)">·</span>IOT<span class="brand-sub">SMART HOME SYSTEM</span></div>
+    </a>
     <div class="nav-links">
-      <a href="iot-admin.html" class="nav-link-btn active">Admin</a>
-      <a href="iot-control.html" class="nav-link-btn">Control</a>
-      <a href="iot-monitor.html" class="nav-link-btn">Monitor</a>
+      <a href="index.html"   class="nav-link-btn active">🗂️ Admin</a>
+      <a href="control.html" class="nav-link-btn">🎛️ Control</a>
+      <a href="monitor.html" class="nav-link-btn">📊 Monitor</a>
     </div>
   </nav>
 
-  <div class="main-content">
-    <!-- Page Header -->
+  <main class="main-content">
     <div class="page-header">
-      <div class="page-title">Gestión de <span>Dispositivos</span></div>
-      <div class="page-subtitle">// CRUD · MockAPI REST · IoT Device Registry</div>
+      <div class="page-title">Administración <span>Smart Home</span></div>
+      <div class="page-subtitle">// 16 dispositivos · 3 subsistemas · MockAPI REST</div>
     </div>
 
-    <!-- Stats -->
-    <div class="stats-bar" id="statsBar">
-      <div class="stat-card"><div class="stat-value" id="statTotal">0</div><div class="stat-label">Total Dispositivos</div></div>
-      <div class="stat-card"><div class="stat-value green" id="statOn">0</div><div class="stat-label">En Línea</div></div>
-      <div class="stat-card"><div class="stat-value red" id="statOff">0</div><div class="stat-label">Fuera de Línea</div></div>
-      <div class="stat-card"><div class="stat-value yellow" id="statError">0</div><div class="stat-label">Con Error</div></div>
+    <div class="stats-strip">
+      <div class="stat-card">
+        <div class="stat-icon">📡</div>
+        <div class="stat-value white" id="statTotal">–</div>
+        <div class="stat-label">Total Dispositivos</div>
+      </div>
+      <div class="stat-card s-rack">
+        <div class="stat-icon">🟢</div>
+        <div class="stat-value cyan" id="statOnline">–</div>
+        <div class="stat-label">En Línea</div>
+      </div>
+      <div class="stat-card s-rack">
+        <div class="stat-icon">🖥️</div>
+        <div class="stat-value cyan" id="statRack">–</div>
+        <div class="stat-label">Smart Rack</div>
+      </div>
+      <div class="stat-card s-access">
+        <div class="stat-icon">📦</div>
+        <div class="stat-value green" id="statAccess">–</div>
+        <div class="stat-label">Paquetería</div>
+      </div>
+      <div class="stat-card s-energy">
+        <div class="stat-icon">⚡</div>
+        <div class="stat-value yellow" id="statEnergy">–</div>
+        <div class="stat-label">Energía</div>
+      </div>
     </div>
 
-    <!-- Toolbar -->
     <div class="toolbar">
       <div class="search-box">
         <span class="icon">🔍</span>
         <input type="text" id="searchInput" placeholder="Buscar dispositivo..." oninput="renderTable()">
       </div>
-      <button class="btn-add" onclick="openModal()">
-        <span>＋</span> Nuevo Dispositivo
-      </button>
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="all"    onclick="setFilter('all')">Todos</button>
+        <button class="filter-tab" data-filter="rack"   onclick="setFilter('rack')"><span class="nav-sys-dot dot-rack"></span>Rack</button>
+        <button class="filter-tab" data-filter="access" onclick="setFilter('access')"><span class="nav-sys-dot dot-access"></span>Acceso</button>
+        <button class="filter-tab" data-filter="energy" onclick="setFilter('energy')"><span class="nav-sys-dot dot-energy"></span>Energía</button>
+      </div>
+      <button class="btn-add" onclick="openModal()">＋ Nuevo Dispositivo</button>
     </div>
 
-    <!-- Table -->
     <div class="table-card">
       <table>
-        <thead>
-          <tr>
-            <th>Tipo</th>
-            <th>Dispositivo</th>
-            <th>Categoría</th>
-            <th>Ubicación</th>
-            <th>Estado</th>
-            <th>Último Ping</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
+        <thead><tr>
+          <th>Icono</th><th>Dispositivo</th><th>Tipo</th>
+          <th>Ubicación</th><th>Sistema</th><th>Estado</th><th>Ping</th><th>Acciones</th>
+        </tr></thead>
         <tbody id="deviceTableBody"></tbody>
       </table>
       <div id="emptyState" class="empty-state" style="display:none">
-        <div class="icon">📡</div>
-        <p>No se encontraron dispositivos</p>
+        <div class="icon">📡</div><p>Sin dispositivos</p>
       </div>
     </div>
-  </div>
+  </main>
 
   <!-- Modal -->
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal-box">
-      <div class="modal-title">
-        <span id="modalTitleText">Nuevo</span> Dispositivo
-      </div>
+      <div class="modal-title"><span id="modalTitleText">Nuevo</span> Dispositivo</div>
       <form id="deviceForm" onsubmit="saveDevice(event)">
-        <input type="hidden" id="deviceId">
+        <input type="hidden" id="devId">
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Nombre del Dispositivo</label>
-            <input type="text" class="form-control-custom" id="fName" required placeholder="Ej: Sensor Sala">
+            <label class="form-label">Nombre</label>
+            <input type="text" class="form-control-custom" id="fName" required placeholder="Ej: DHT22 — Rack">
           </div>
           <div class="form-group">
-            <label class="form-label">Categoría</label>
+            <label class="form-label">Tipo</label>
             <select class="form-control-custom" id="fType">
               <option value="sensor">Sensor</option>
               <option value="actuador">Actuador</option>
               <option value="camara">Cámara</option>
-              <option value="controlador">Controlador</option>
               <option value="gateway">Gateway</option>
+              <option value="controlador">Controlador</option>
             </select>
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Ubicación</label>
-            <input type="text" class="form-control-custom" id="fLocation" required placeholder="Ej: Sala Principal">
+            <input type="text" class="form-control-custom" id="fLocation" required placeholder="Ej: Rack Servidor">
           </div>
           <div class="form-group">
-            <label class="form-label">Dirección IP</label>
+            <label class="form-label">IP</label>
             <input type="text" class="form-control-custom" id="fIp" required placeholder="192.168.1.x">
           </div>
         </div>
@@ -425,16 +121,17 @@
             <label class="form-label">Protocolo</label>
             <select class="form-control-custom" id="fProtocol">
               <option value="MQTT">MQTT</option>
+              <option value="Zigbee">Zigbee</option>
               <option value="HTTP">HTTP</option>
-              <option value="CoAP">CoAP</option>
+              <option value="Bluetooth">Bluetooth</option>
               <option value="WebSocket">WebSocket</option>
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Estado Inicial</label>
+            <label class="form-label">Estado</label>
             <select class="form-control-custom" id="fStatus">
-              <option value="online">Online</option>
-              <option value="offline">Offline</option>
+              <option value="online">🟢 Online</option>
+              <option value="offline">🔴 Offline</option>
             </select>
           </div>
         </div>
@@ -444,273 +141,20 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
-          <button type="submit" class="btn-save" id="saveBtn">💾 Guardar</button>
+          <button type="submit" class="btn-save">💾 Guardar</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Toast Container -->
+  <footer class="site-footer">
+    <span>© 2026 NEXUS·IOT Smart Home</span><span class="footer-sep">|</span>
+    <span>Tecnologías IoT</span><span class="footer-sep">|</span>
+    <span>Diseñado por</span>
+    <a class="footer-link" href="https://www.linkedin.com/in/tu-perfil" target="_blank" rel="noopener"><i class="linkedin-icon">in</i> Tu Nombre</a>
+  </footer>
   <div class="toast-container" id="toastContainer"></div>
 </div>
-
-<script>
-// =====================================================
-// MOCKAPI REAL CONNECTION
-// https://698a1772c04d974bc6a1532f.mockapi.io/api/v1
-// =====================================================
-
-const BASE_URL = 'https://698a1772c04d974bc6a1532f.mockapi.io/api/v1';
-
-function getIcon(type) {
-  const icons = { sensor: '🔬', actuador: '⚙️', camara: '📷', controlador: '🎛️', gateway: '🔀' };
-  return icons[type] || '📡';
-}
-
-const API = {
-  getAll: async () => {
-    const res = await fetch(`${BASE_URL}/devices`);
-    if (!res.ok) throw new Error('Error al obtener dispositivos');
-    const data = await res.json();
-    // Enrich icon field if missing
-    return data.map(d => ({ ...d, icon: d.icon || getIcon(d.type) }));
-  },
-
-  create: async (data) => {
-    const payload = {
-      ...data,
-      icon: getIcon(data.type),
-      powered: data.status === 'online',
-      value: 'N/A',
-      lastPing: new Date().toISOString(),
-      createdAt: new Date().toISOString()
-    };
-    const res = await fetch(`${BASE_URL}/devices`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    if (!res.ok) throw new Error('Error al crear dispositivo');
-    const created = await res.json();
-    // Seed initial status history entry
-    await fetch(`${BASE_URL}/statusHistory`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        deviceId: created.id,
-        timestamp: new Date().toISOString(),
-        status: created.status,
-        powered: created.powered,
-        value: 'N/A'
-      })
-    });
-    return created;
-  },
-
-  update: async (id, data) => {
-    const payload = {
-      ...data,
-      icon: getIcon(data.type),
-      lastPing: new Date().toISOString()
-    };
-    const res = await fetch(`${BASE_URL}/devices/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    if (!res.ok) throw new Error('Error al actualizar dispositivo');
-    return res.json();
-  },
-
-  delete: async (id) => {
-    const res = await fetch(`${BASE_URL}/devices/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('Error al eliminar dispositivo');
-    return res.json();
-  }
-};
-
-function getIcon(type) {
-  const icons = { sensor: '🔬', actuador: '⚙️', camara: '📷', controlador: '🎛️', gateway: '🔀' };
-  return icons[type] || '📡';
-}
-
-// =====================================================
-// UI Logic
-// =====================================================
-let devices = [];
-let editingId = null;
-
-async function loadDevices() {
-  const tbody = document.getElementById('deviceTableBody');
-  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted);font-family:var(--font-mono);font-size:0.8rem">
-    <div style="display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:0.5rem"></div>
-    <br>Cargando desde MockAPI...
-  </td></tr>`;
-  try {
-    devices = await API.getAll();
-    renderTable();
-    updateStats();
-  } catch(err) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--danger);font-family:var(--font-mono);font-size:0.8rem">
-      ❌ Error conectando con MockAPI: ${err.message}<br>
-      <small style="color:var(--muted);margin-top:0.5rem;display:block">Verifica tu conexión o la URL del endpoint</small>
-    </td></tr>`;
-    showToast('❌ No se pudo conectar con MockAPI', true);
-  }
-}
-
-function updateStats() {
-  document.getElementById('statTotal').textContent = devices.length;
-  document.getElementById('statOn').textContent = devices.filter(d => d.status === 'online').length;
-  document.getElementById('statOff').textContent = devices.filter(d => d.status === 'offline').length;
-  document.getElementById('statError').textContent = devices.filter(d => d.status === 'error').length;
-}
-
-function renderTable() {
-  const query = document.getElementById('searchInput').value.toLowerCase();
-  const filtered = devices.filter(d =>
-    d.name.toLowerCase().includes(query) ||
-    d.location.toLowerCase().includes(query) ||
-    d.type.toLowerCase().includes(query)
-  );
-
-  const tbody = document.getElementById('deviceTableBody');
-  tbody.innerHTML = '';
-  document.getElementById('emptyState').style.display = filtered.length === 0 ? 'block' : 'none';
-
-  filtered.forEach(d => {
-    const pingTime = d.lastPing instanceof Date ? d.lastPing : new Date(d.lastPing);
-    const ago = getTimeAgo(pingTime);
-    const statusClass = d.status === 'online' ? 'on' : d.status === 'error' ? 'error' : 'off';
-    const statusLabel = d.status === 'online' ? 'Online' : d.status === 'error' ? 'Error' : 'Offline';
-
-    tbody.innerHTML += `
-      <tr>
-        <td><div class="device-icon-cell">${d.icon}</div></td>
-        <td>
-          <div class="device-name">${d.name}</div>
-          <div class="device-id">${d.id} · ${d.ip} · ${d.protocol}</div>
-        </td>
-        <td><span class="badge-type">${d.type.toUpperCase()}</span></td>
-        <td><span class="badge-location">${d.location}</span></td>
-        <td><div class="status-dot"><span class="dot ${statusClass}"></span>${statusLabel}</div></td>
-        <td style="font-family:var(--font-mono);font-size:0.78rem;color:var(--muted)">${ago}</td>
-        <td>
-          <div class="action-btns">
-            <button class="btn-icon edit" onclick="editDevice('${d.id}')" title="Editar">✏️</button>
-            <button class="btn-icon del" onclick="deleteDevice('${d.id}')" title="Eliminar">🗑️</button>
-          </div>
-        </td>
-      </tr>
-    `;
-  });
-}
-
-function getTimeAgo(date) {
-  const diff = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (diff < 60) return `hace ${diff}s`;
-  if (diff < 3600) return `hace ${Math.floor(diff/60)}m`;
-  return `hace ${Math.floor(diff/3600)}h`;
-}
-
-function openModal(id = null) {
-  editingId = id;
-  document.getElementById('deviceForm').reset();
-  document.getElementById('deviceId').value = '';
-
-  if (id) {
-    const d = devices.find(x => x.id === id);
-    document.getElementById('modalTitleText').textContent = 'Editar';
-    document.getElementById('fName').value = d.name;
-    document.getElementById('fType').value = d.type;
-    document.getElementById('fLocation').value = d.location;
-    document.getElementById('fIp').value = d.ip;
-    document.getElementById('fProtocol').value = d.protocol;
-    document.getElementById('fStatus').value = d.status;
-    document.getElementById('fDesc').value = d.description || '';
-    document.getElementById('deviceId').value = d.id;
-  } else {
-    document.getElementById('modalTitleText').textContent = 'Nuevo';
-    // Default IP
-    document.getElementById('fIp').value = `192.168.1.${Math.floor(Math.random() * 200 + 50)}`;
-  }
-
-  document.getElementById('modalOverlay').classList.add('open');
-}
-
-function closeModal() {
-  document.getElementById('modalOverlay').classList.remove('open');
-  editingId = null;
-}
-
-async function saveDevice(e) {
-  e.preventDefault();
-  const data = {
-    name: document.getElementById('fName').value,
-    type: document.getElementById('fType').value,
-    location: document.getElementById('fLocation').value,
-    ip: document.getElementById('fIp').value,
-    protocol: document.getElementById('fProtocol').value,
-    status: document.getElementById('fStatus').value,
-    description: document.getElementById('fDesc').value
-  };
-
-  const id = document.getElementById('deviceId').value;
-  try {
-    if (id) {
-      await API.update(id, data);
-      showToast('✅ Dispositivo actualizado correctamente');
-    } else {
-      await API.create(data);
-      showToast('✅ Dispositivo creado correctamente');
-    }
-    closeModal();
-    await loadDevices();
-  } catch(err) {
-    showToast('❌ Error al guardar dispositivo', true);
-  }
-}
-
-async function editDevice(id) {
-  openModal(id);
-}
-
-async function deleteDevice(id) {
-  const d = devices.find(x => x.id === id);
-  if (!confirm(`¿Eliminar "${d.name}"?`)) return;
-  try {
-    await API.delete(id);
-    showToast(`🗑️ "${d.name}" eliminado`);
-    await loadDevices();
-  } catch(err) {
-    showToast('❌ Error al eliminar', true);
-  }
-}
-
-function showToast(msg, isError = false) {
-  const container = document.getElementById('toastContainer');
-  const el = document.createElement('div');
-  el.className = `toast-item${isError ? ' error' : ''}`;
-  el.textContent = msg;
-  container.appendChild(el);
-  setTimeout(() => el.remove(), 3500);
-}
-
-// Close modal on overlay click
-document.getElementById('modalOverlay').addEventListener('click', (e) => {
-  if (e.target === document.getElementById('modalOverlay')) closeModal();
-});
-
-// Auto-refresh stats every 5s
-setInterval(async () => {
-  try {
-    devices = await API.getAll();
-    renderTable();
-    updateStats();
-  } catch(e) { /* silent refresh fail */ }
-}, 5000);
-
-loadDevices();
-</script>
+<script src="js/admin.js"></script>
 </body>
 </html>
